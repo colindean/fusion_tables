@@ -47,7 +47,12 @@ module GData
         def select columns="*", conditions=nil
           @client.execute "SELECT #{columns} FROM #{@id} #{conditions}"
         end
-        
+
+        # A shortcut for retrieving the rowids for a set of conditions
+        def rowids conditions=nil
+          select 'ROWID', conditions
+        end
+
         # Returns a count of rows. SQL conditions optional
         #
         # Note: handles odd FT response: when table has 0 rows, returns empty array.
@@ -84,10 +89,23 @@ module GData
               end  
             end  
           end
-        end                
+        end
+
+        #Run update on a single row or an array of rows
+        #WARNING: this is implemented very inefficiently
+        def update row_id, data
+          if row_id.respond_to? :each
+            #it's an array of ROWIDs
+            row_id.each do |rowid|
+              update_one rowid, data
+            end
+          else
+            update_one rowid, data
+          end
+        end
 
         # Runs update on row specified and return data obj
-        def update row_id, data          
+        def update_one row_id, data          
           data = encode([data]).first
           data = data.to_a.map{|x| x.join("=")}.join(", ")
           @client.execute "UPDATE #{@id} SET #{data} WHERE ROWID = '#{row_id}'"
